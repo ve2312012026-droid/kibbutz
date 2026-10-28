@@ -217,6 +217,30 @@
     .btn-entregado { background: #f1f5f9; color: #475569; }
     .btn-cancelar { background: #fee2e2; color: #b91c1c; }
     .btn-ticket { background: #e0e7ff; color: #3730a3; }
+    .btn-pagar { background: linear-gradient(135deg, #059669, #10b981); color: white; font-weight: 600; }
+    .btn-pagar-disabled { background: #d1fae5; color: #065f46; cursor: default; }
+    .btn-cobrado { background: #fef3c7; color: #92400e; font-weight: 600; }
+
+    .pedido-card.solicita-cuenta {
+      border-left-color: #059669 !important;
+      box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25), var(--sombra);
+      animation: pulse-cuenta 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-cuenta {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25), var(--sombra); }
+      50% { box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.4), var(--sombra); }
+    }
+    .badge-cuenta {
+      margin-top: 6px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: #059669;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-block;
+      letter-spacing: 0.3px;
+    }
 
     .filtros { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; }
     .filtro-btn {
@@ -341,6 +365,7 @@
       <h2 id="titulo-pedidos">Pedidos</h2>
       <div class="filtros solo-admin" id="filtros">
         <button class="filtro-btn active" onclick="setFiltro('todos')">Todos</button>
+        <button class="filtro-btn" onclick="setFiltro('cuenta')">💰 Cuenta</button>
         <button class="filtro-btn" onclick="setFiltro('en-espera')">En espera</button>
         <button class="filtro-btn" onclick="setFiltro('en-preparacion')">Preparación</button>
         <button class="filtro-btn" onclick="setFiltro('listo')">Listos</button>
@@ -372,6 +397,20 @@
     <!-- PRODUCTOS (solo admin) -->
     <section id="sec-productos" class="seccion">
       <h2>Gestionar productos</h2>
+
+      <!-- Configuración de mesas -->
+      <div class="card" id="card-config-mesas">
+        <h3 style="font-size:1rem; margin-bottom:12px; font-weight:600;">⚙️ Configuración</h3>
+        <div class="campo">
+          <label>Número de mesas</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="number" id="input-num-mesas" min="1" max="30" value="8" style="width:90px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--gris-medio); background:var(--fondo); color:var(--texto); font-size:1rem;" />
+            <button class="btn-mini btn-guardar" onclick="guardarNumMesas()" style="padding:10px 16px;">Guardar</button>
+          </div>
+          <p style="font-size:0.78rem; color:var(--gris); margin-top:8px;">Esto actualiza las opciones de mesa al crear pedidos.</p>
+        </div>
+      </div>
+
       <div class="card">
         <div class="campo">
           <label>Categoría</label>
@@ -443,16 +482,16 @@
       </div>
     </div>
 
-    <!-- Modal Ticket -->
+    <!-- Modal Factura -->
     <div class="modal" id="modal-ticket">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Ticket</h3>
+          <h3>Factura</h3>
           <button class="btn-cerrar" onclick="cerrarTicket()">×</button>
         </div>
         <div id="ticket-content" class="card"></div>
         <button class="btn-confirmar" onclick="imprimirTicket()" style="margin-top:12px;">Imprimir / Guardar</button>
-        <button class="btn-secundario" onclick="copiarTicket()">Copiar texto</button>
+        <button class="btn-secundario" onclick="copiarTicket()">Copiar factura</button>
       </div>
     </div>
 
@@ -501,8 +540,16 @@
     const db = firebase.database();
     const pedidosRef = db.ref("pedidos");
     const menuRef = db.ref("menu");
+    const configRef = db.ref("config");
+    const contadorRef = db.ref("contadorPedidos");
 
     const PIN_ADMIN = "1234";
+
+    // Configuración por defecto
+    let CONFIG = {
+      numMesas: 8,
+      nombreNegocio: "KIBBUTZ"
+    };
 
     const MENU_DEFAULT = {
       "Pupusas": [
@@ -544,6 +591,45 @@
     let misPedidosIds = JSON.parse(localStorage.getItem("kibbutz_mis_pedidos") || "[]");
     let filtroActual = "todos";
     let listenerActivo = false;
+
+    // ID único y persistente por dispositivo/navegador para privacidad de clientes
+    function getClienteId() {
+      let id = localStorage.getItem("kibbutz_cliente_id");
+      if (!id) {
+        id = "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 11);
+        localStorage.setItem("kibbutz_cliente_id", id);
+      }
+      return id;
+    }
+
+    function cargarConfig() {
+      return configRef.once("value").then(snap => {
+        if (snap.exists()) {
+          CONFIG = { ...CONFIG, ...snap.val() };
+        } else {
+          configRef.set(CONFIG);
+        }
+        actualizarSelectMesas();
+        if (rolActual === "admin") renderConfigMesas();
+      });
+    }
+
+    function guardarConfig() {
+      configRef.set(CONFIG);
+    }
+
+    function actualizarSelectMesas() {
+      const select = document.getElementById("mesa-cliente");
+      if (!select) return;
+      const valorActual = select.value;
+      let opciones = `<option value="">Seleccionar mesa</option>`;
+      for (let i = 1; i <= (CONFIG.numMesas || 8); i++) {
+        opciones += `<option value="${i}">Mesa ${i}</option>`;
+      }
+      opciones += `<option value="Para llevar">Para llevar</option>`;
+      select.innerHTML = opciones;
+      if (valorActual) select.value = valorActual;
+    }
 
     // Tema
     if (localStorage.getItem("kibbutz_tema") === "dark") document.body.classList.add("dark");
@@ -589,6 +675,7 @@
       document.getElementById("fecha-hoy").textContent = new Date().toLocaleDateString("es-SV", { weekday: "long", day: "numeric", month: "long" });
       document.getElementById("fecha-historial").value = hoy();
 
+      cargarConfig();
       cargarMenu();
       iniciarEscuchaPedidos();
     }
@@ -681,20 +768,35 @@
         lista.sort((a, b) => (b.id || 0) - (a.id || 0));
 
         lista.forEach(p => {
-          const prev = estadosAnteriores[p.id];
-          if (rolActual === "admin" && !prev && p.estado === "en-espera") {
+          const prev = estadosAnteriores[p.id] || {};
+          // Nuevo pedido
+          if (rolActual === "admin" && !prev.estado && p.estado === "en-espera") {
             notificar(`🆕 Nuevo pedido #${p.id}`, `Mesa ${p.mesa} · $${Number(p.total).toFixed(2)}`, "nuevo-" + p.id, true);
           }
-          if (rolActual === "usuario" && misPedidosIds.includes(p.id) && prev && prev !== p.estado) {
+          // Cliente solicita la cuenta
+          if (rolActual === "admin" && p.solicitaCuenta && !prev.solicitaCuenta) {
+            notificar(
+              `💰 ¡SOLICITA CUENTA! Mesa ${p.mesa}`,
+              `Pedido #${p.id} · $${Number(p.total).toFixed(2)} · ${p.cliente || "Cliente"}`,
+              "cuenta-" + p.id,
+              true
+            );
+          }
+          // Cambios de estado para el cliente dueño del pedido
+          const esMio = rolActual === "usuario" && (
+            (p.clienteId && p.clienteId === getClienteId()) ||
+            misPedidosIds.includes(p.id)
+          );
+          if (esMio && prev.estado && prev.estado !== p.estado) {
             const msgs = {
               "en-preparacion": "Tu pedido está en preparación 👨🍳",
               "listo": "¡Tu pedido está listo! ✅",
-              "entregado": "Pedido entregado. ¡Buen provecho! 🍽️",
+              "entregado": "¡Gracias! Tu cuenta ha sido cobrada. ¡Buen provecho! 🍽️",
               "cancelado": "Tu pedido fue cancelado"
             };
             if (msgs[p.estado]) notificar(`Pedido #${p.id}`, msgs[p.estado], "estado-" + p.id, true);
           }
-          estadosAnteriores[p.id] = p.estado;
+          estadosAnteriores[p.id] = { estado: p.estado, solicitaCuenta: !!p.solicitaCuenta };
         });
 
         pedidos = lista;
@@ -716,7 +818,10 @@
       if (btn) btn.classList.add("active");
       if (nombre === "pedidos") renderPedidos();
       if (nombre === "arqueo") calcularArqueo();
-      if (nombre === "productos") renderAdminProductos();
+      if (nombre === "productos") {
+        renderAdminProductos();
+        renderConfigMesas();
+      }
       if (nombre === "historial") cargarHistorial();
     }
 
@@ -813,35 +918,44 @@
       const btn = document.getElementById("btn-confirmar");
       btn.disabled = true; btn.textContent = "Enviando...";
 
-      const nuevoId = contadorPedidos + 1;
-      const nuevo = {
-        id: nuevoId,
-        cliente: document.getElementById("nombre-cliente").value.trim() || "Cliente",
-        mesa,
-        nota: document.getElementById("nota-cliente").value.trim(),
-        items: JSON.parse(JSON.stringify(pedidoActual)),
-        total: pedidoActual.reduce((s, i) => s + i.precio * i.cantidad, 0),
-        estado: "en-espera",
-        hora: new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" }),
-        fecha: hoy(),
-        timestamp: Date.now(),
-        creadoPor: rolActual
-      };
+      // Contador atómico para evitar números de pedido duplicados
+      contadorRef.transaction(actual => (actual || 0) + 1).then(result => {
+        if (!result.committed) throw new Error("No se pudo obtener número de pedido");
+        const nuevoId = result.snapshot.val();
 
-      pedidosRef.push(nuevo).then(() => {
-        if (rolActual === "usuario") {
-          misPedidosIds.push(nuevoId);
-          localStorage.setItem("kibbutz_mis_pedidos", JSON.stringify(misPedidosIds));
-        }
-        pedidoActual = [];
-        document.getElementById("nombre-cliente").value = "";
-        document.getElementById("mesa-cliente").value = "";
-        document.getElementById("nota-cliente").value = "";
-        actualizarFlotante();
-        cerrarModal();
-        mostrarToast(`Pedido #${nuevo.id} enviado ✓`);
-        mostrarSeccion("pedidos");
-      }).catch(() => mostrarToast("Error al enviar")).finally(() => {
+        const nuevo = {
+          id: nuevoId,
+          cliente: document.getElementById("nombre-cliente").value.trim() || "Cliente",
+          mesa,
+          nota: document.getElementById("nota-cliente").value.trim(),
+          items: JSON.parse(JSON.stringify(pedidoActual)),
+          total: pedidoActual.reduce((s, i) => s + i.precio * i.cantidad, 0),
+          estado: "en-espera",
+          hora: new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" }),
+          fecha: hoy(),
+          timestamp: Date.now(),
+          creadoPor: rolActual,
+          clienteId: rolActual === "usuario" ? getClienteId() : null,
+          solicitaCuenta: false
+        };
+
+        return pedidosRef.push(nuevo).then(() => {
+          if (rolActual === "usuario") {
+            if (!misPedidosIds.includes(nuevoId)) {
+              misPedidosIds.push(nuevoId);
+              localStorage.setItem("kibbutz_mis_pedidos", JSON.stringify(misPedidosIds));
+            }
+          }
+          pedidoActual = [];
+          document.getElementById("nombre-cliente").value = "";
+          document.getElementById("mesa-cliente").value = "";
+          document.getElementById("nota-cliente").value = "";
+          actualizarFlotante();
+          cerrarModal();
+          mostrarToast(`Pedido #${nuevoId} enviado ✓`);
+          mostrarSeccion("pedidos");
+        });
+      }).catch(() => mostrarToast("Error al enviar el pedido")).finally(() => {
         btn.disabled = false; btn.textContent = "Confirmar pedido";
       });
     }
@@ -859,15 +973,31 @@
 
       let activos = pedidos.filter(p => p.fecha === hoy());
 
-      // Privacidad: el cliente solo ve sus propios pedidos
+      // Privacidad: el cliente solo ve SUS propios pedidos (por clienteId del dispositivo)
+      // El administrador ve todos.
       if (rolActual === "usuario") {
-        activos = activos.filter(p => misPedidosIds.includes(p.id));
+        const miClienteId = getClienteId();
+        activos = activos.filter(p =>
+          (p.clienteId && p.clienteId === miClienteId) ||
+          misPedidosIds.includes(p.id)
+        );
         if (titulo) titulo.textContent = "Mis pedidos";
       } else {
         if (titulo) titulo.textContent = "Pedidos";
-        if (filtroActual !== "todos") {
+        if (filtroActual === "cuenta") {
+          activos = activos.filter(p => p.solicitaCuenta);
+        } else if (filtroActual !== "todos") {
           activos = activos.filter(p => p.estado === filtroActual);
         }
+      }
+
+      // Ordenar: primero los que solicitan cuenta (admin), luego por id desc
+      if (rolActual === "admin") {
+        activos.sort((a, b) => {
+          if (a.solicitaCuenta && !b.solicitaCuenta) return -1;
+          if (!a.solicitaCuenta && b.solicitaCuenta) return 1;
+          return (b.id || 0) - (a.id || 0);
+        });
       }
 
       if (activos.length === 0) {
@@ -878,14 +1008,21 @@
       cont.innerHTML = activos.map(p => {
         const itemsTxt = (p.items || []).map(i => `${i.cantidad}× ${i.nombre}`).join(", ");
         const puedeCambiar = rolActual === "admin";
+        const esMio = rolActual === "usuario";
+        const puedeSolicitarCuenta = esMio && !p.solicitaCuenta && p.estado !== "cancelado" && p.estado !== "entregado";
+        const yaSolicito = esMio && p.solicitaCuenta;
+
         return `
-          <div class="pedido-card ${p.estado}">
+          <div class="pedido-card ${p.estado} ${p.solicitaCuenta ? "solicita-cuenta" : ""}">
             <div class="pedido-header">
               <div>
                 <div class="pedido-num">#${p.id} · ${p.cliente || "Cliente"} <span class="pedido-mesa">Mesa ${p.mesa || "?"}</span></div>
                 <div class="pedido-hora">${p.hora || ""}</div>
               </div>
-              <span class="estado-badge estado-${p.estado}">${textoEstado(p.estado)}</span>
+              <div style="text-align:right;">
+                <span class="estado-badge estado-${p.estado}">${textoEstado(p.estado)}</span>
+                ${p.solicitaCuenta ? `<div class="badge-cuenta">💰 SOLICITA CUENTA</div>` : ""}
+              </div>
             </div>
             <div class="pedido-items">${itemsTxt}</div>
             ${p.nota ? `<div class="pedido-nota">📝 ${p.nota}</div>` : ""}
@@ -895,7 +1032,10 @@
               ${puedeCambiar && (p.estado === "en-preparacion" || p.estado === "en-espera") ? `<button class="btn-estado btn-listo" onclick="cambiarEstado('${p.firebaseKey}', 'listo')">Listo</button>` : ""}
               ${puedeCambiar && p.estado === "listo" ? `<button class="btn-estado btn-entregado" onclick="cambiarEstado('${p.firebaseKey}', 'entregado')">Entregado</button>` : ""}
               ${puedeCambiar && p.estado !== "cancelado" && p.estado !== "entregado" ? `<button class="btn-estado btn-cancelar" onclick="cambiarEstado('${p.firebaseKey}', 'cancelado')">Cancelar</button>` : ""}
-              <button class="btn-estado btn-ticket" onclick="verTicket('${p.firebaseKey}')">Ticket</button>
+              ${puedeCambiar && p.solicitaCuenta ? `<button class="btn-estado btn-cobrado" onclick="marcarCobrado('${p.firebaseKey}')">✓ Cobrado</button>` : ""}
+              <button class="btn-estado btn-ticket" onclick="verTicket('${p.firebaseKey}')">Factura</button>
+              ${puedeSolicitarCuenta ? `<button class="btn-estado btn-pagar" onclick="solicitarCuenta('${p.firebaseKey}')">💰 Solicitar cuenta</button>` : ""}
+              ${yaSolicito ? `<button class="btn-estado btn-pagar-disabled" disabled>✓ Cuenta solicitada</button>` : ""}
             </div>
           </div>`;
       }).join("");
@@ -910,28 +1050,54 @@
       db.ref("pedidos/" + key).update({ estado }).then(() => mostrarToast("Estado actualizado"));
     }
 
-    // TICKET
+    function solicitarCuenta(key) {
+      if (rolActual !== "usuario") return;
+      db.ref("pedidos/" + key).update({
+        solicitaCuenta: true,
+        solicitaCuentaHora: new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" })
+      }).then(() => {
+        mostrarToast("Cuenta solicitada. El personal irá a cobrarte 💰");
+      }).catch(() => mostrarToast("Error al solicitar cuenta"));
+    }
+
+    function marcarCobrado(key) {
+      if (rolActual !== "admin") return;
+      db.ref("pedidos/" + key).update({
+        solicitaCuenta: false,
+        estado: "entregado"
+      }).then(() => mostrarToast("Marcado como cobrado ✓"));
+    }
+
+    // TICKET / FACTURA profesional
     let ticketActual = null;
     function verTicket(key) {
       const p = pedidos.find(x => x.firebaseKey === key);
       if (!p) return;
       ticketActual = p;
-      const items = (p.items || []).map(i => `${i.cantidad}x ${i.nombre.padEnd(20)} $${(i.cantidad * i.precio).toFixed(2)}`).join("\n");
+      const items = (p.items || []).map(i => {
+        const nombre = (i.nombre || "").substring(0, 22).padEnd(22);
+        return `${String(i.cantidad).padStart(2)} x ${nombre} $${(i.cantidad * i.precio).toFixed(2).padStart(7)}`;
+      }).join("\n");
+      const fechaStr = new Date().toLocaleDateString("es-SV", { day: "2-digit", month: "2-digit", year: "numeric" });
       const texto = `
-KIBBUTZ
---------------------------------
+================================
+       ${(CONFIG.nombreNegocio || "KIBBUTZ").toUpperCase()}
+     Sistema de pedidos
+================================
+Fecha: ${fechaStr}
+Hora:  ${p.hora || "-"}
 Pedido #${p.id}
-Mesa: ${p.mesa || "-"}
+--------------------------------
+Mesa:    ${p.mesa || "-"}
 Cliente: ${p.cliente || "-"}
-Hora: ${p.hora || "-"}
 --------------------------------
 ${items}
 --------------------------------
-TOTAL: $${Number(p.total).toFixed(2)}
-${p.nota ? "Nota: " + p.nota : ""}
---------------------------------
-¡Gracias!
-      `.trim();
+TOTAL A PAGAR:     $${Number(p.total).toFixed(2).padStart(8)}
+${p.nota ? "Nota: " + p.nota + "\n" : ""}================================
+   ¡Gracias por su visita!
+================================
+`.trim();
       document.getElementById("ticket-content").textContent = texto;
       document.getElementById("modal-ticket").classList.add("open");
     }
@@ -939,7 +1105,25 @@ ${p.nota ? "Nota: " + p.nota : ""}
     function imprimirTicket() { window.print(); }
     function copiarTicket() {
       navigator.clipboard.writeText(document.getElementById("ticket-content").textContent)
-        .then(() => mostrarToast("Ticket copiado ✓"));
+        .then(() => mostrarToast("Factura copiada ✓"));
+    }
+
+    // CONFIG MESAS
+    function renderConfigMesas() {
+      const input = document.getElementById("input-num-mesas");
+      if (input) input.value = CONFIG.numMesas || 8;
+    }
+
+    function guardarNumMesas() {
+      const input = document.getElementById("input-num-mesas");
+      const n = parseInt(input.value, 10);
+      if (isNaN(n) || n < 1 || n > 30) {
+        return mostrarToast("Ingresa un número entre 1 y 30");
+      }
+      CONFIG.numMesas = n;
+      guardarConfig();
+      actualizarSelectMesas();
+      mostrarToast(`Mesas actualizadas: ${n}`);
     }
 
     // ADMIN PRODUCTOS
