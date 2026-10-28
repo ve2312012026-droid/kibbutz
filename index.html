@@ -338,8 +338,8 @@
 
     <!-- PEDIDOS -->
     <section id="sec-pedidos" class="seccion">
-      <h2>Pedidos</h2>
-      <div class="filtros" id="filtros">
+      <h2 id="titulo-pedidos">Pedidos</h2>
+      <div class="filtros solo-admin" id="filtros">
         <button class="filtro-btn active" onclick="setFiltro('todos')">Todos</button>
         <button class="filtro-btn" onclick="setFiltro('en-espera')">En espera</button>
         <button class="filtro-btn" onclick="setFiltro('en-preparacion')">Preparación</button>
@@ -855,11 +855,23 @@
 
     function renderPedidos() {
       const cont = document.getElementById("lista-pedidos");
+      const titulo = document.getElementById("titulo-pedidos");
+
       let activos = pedidos.filter(p => p.fecha === hoy());
-      if (filtroActual !== "todos") activos = activos.filter(p => p.estado === filtroActual);
+
+      // Privacidad: el cliente solo ve sus propios pedidos
+      if (rolActual === "usuario") {
+        activos = activos.filter(p => misPedidosIds.includes(p.id));
+        if (titulo) titulo.textContent = "Mis pedidos";
+      } else {
+        if (titulo) titulo.textContent = "Pedidos";
+        if (filtroActual !== "todos") {
+          activos = activos.filter(p => p.estado === filtroActual);
+        }
+      }
 
       if (activos.length === 0) {
-        cont.innerHTML = `<div class="vacio"><p>No hay pedidos</p></div>`;
+        cont.innerHTML = `<div class="vacio"><p>${rolActual === "usuario" ? "Aún no has hecho ningún pedido" : "No hay pedidos"}</p></div>`;
         return;
       }
 
