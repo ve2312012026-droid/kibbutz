@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1e3a5f" />
+  <title>KIBBUTZ</title>
+  <style>
+    :root {
+      --azul-oscuro: #1e3a5f;
+      --azul: #2c5282;
+      --azul-claro: #3b82f6;
+      --gris-oscuro: #1e293b;
+      --gris: #64748b;
+      --gris-claro: #f8fafc;
+      --gris-medio: #e2e8f0;
+      --vino: #7c2d3e;
+      --vino-claro: #9f1239;
+      --rojo: #dc2626;
+      --verde: #16a34a;
+      --blanco: #ffffff;
+      --sombra: 0 4px 24px rgba(30, 58, 95, 0.10);
+      --radius: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f1f5f9;
+      color: var(--gris-oscuro);
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
+
+    /* ========== LOGIN ========== */
+    #pantalla-login {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #1e3a5f 0%, #2c5282 50%, #7c2d3e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #pantalla-login.oculto {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.03);
+    }
+
+    .login-logo {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: white;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+
+    .login-sub {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.95rem;
+      margin-bottom: 48px;
+      letter-spacing: 1px;
+    }
+
+    .login-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .btn-login {
+      padding: 18px 24px;
+      border-radius: 14px;
+      border: none;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-login.usuario {
+      background: white;
+      color: var(--azul-oscuro);
+    }
+
+    .btn-login.admin {
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.35);
+    }
+
+    .btn-login:active {
+      transform: scale(0.97);
+    }
+
+    #caja-pin {
+      display: none;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 320px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    #caja-pin.visible {
+      display: block;
+    }
+
+    #pin-input {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1.3rem;
+      text-align: center;
+      letter-spacing: 8px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    .btn-entrar-pin {
+      width: 100%;
+      padding: 14px;
+      background: var(--vino);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .pin-error {
+      color: #fecaca;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ========== HEADER ========== */
+    header {
+      background: linear-gradient(135deg, var(--azul-oscuro), var(--azul));
+      color: white;
+      padding: 16px 20px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 20px rgba(30, 58, 95, 0.3);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+    }
+
+    .rol-badge {
+      font-size: 0.7rem;
+      background: rgba(255,255,255,0.18);
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .fecha {
+      font-size: 0.78rem;
+      opacity: 0.8;
+      margin-top: 3px;
+    }
+
+    .btn-salir {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    /* ========== NAV ========== */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 16px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.07);
+      z-index: 100;
+      border-top: 1px solid var(--gris-medio);
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--gris);
+      font-size: 0.68rem;
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 12px;
+      transition: all 0.25s ease;
+      font-weight: 500;
+    }
+
+    .nav-btn.active {
+      color: var(--azul);
+      background: #eff6ff;
+    }
+
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .nav-btn.oculto {
+      display: none;
+    }
+
+    /* ========== SECCIONES ========== */
+    .seccion {
+      display: none;
+      padding: 18px 16px 30px;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .seccion.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+      color: var(--azul-oscuro);
+      font-weight: 700;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--sombra);
+    }
+
+    /* Categorías */
+    .categorias {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 6px;
+      scrollbar-width: none;
+    }
+    .categorias::-webkit-scrollbar { display: none; }
+
+    .cat-btn {
+      flex-shrink: 0;
+      padding: 9px 18px;
+      border-radius: 22px;
+      border: 1.5px solid var(--gris-medio);
+      background: white;
+      color: var(--gris);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .cat-btn.active {
+      background: var(--vino);
+      color: white;
+      border-color: var(--vino);
+    }
+
+    .producto {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--gris-medio);
+    }
+    .producto:last-child { border-bottom: none; }
+
+    .prod-info h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .prod-info p {
+      font-size: 0.78rem;
+      color: var(--gris);
+      margin-top: 2px;
+    }
+
+    .prod-precio {
+      font-weight: 700;
+      color: var(--azul);
+      font-size: 1rem;
+      margin-right: 12px;
+    }
+
+    .btn-add {
+      background: var(--azul);
+      color: white;
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.35rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    .btn-add:active {
+      background: var(--azul-oscuro);
+      transform: scale(0.9);
+    }
+
+    /* Flotante */
+    #pedido-flotante {
+      position: fixed;
+      bottom: 82px;
+      left: 16px;
+      right: 16px;
+      background: linear-gradient(135deg, var(--azul-oscuro), var(--azul));
+      color: white;
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 32px rgba(30, 58, 95, 0.35);
+      z-index: 90;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    #pedido-flotante .total {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .btn-ver-pedido {
+      background: white;
+      color: var(--azul-oscuro);
+      border: none;
+      padding: 9px 18px;
+      border-radius: 22px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal.open { display: flex; }
+
+    .modal-content {
+      background: white;
+      width: 100%;
+      max-width: 480px;
+      border-radius: 24px 24px 0 0;
+      padding: 22px 20px 34px;
+      max-height: 88vh;
+      overflow-y: auto;
+      animation: slideModal 0.3s ease;
+    }
+
+    @keyframes slideModal {
+      from { transform: translateY(50px); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header h3 {
+      font-size: 1.2rem;
+      color: var(--azul-oscuro);
+      font-weight: 700;
+    }
+
+    .btn-cerrar {
+      background: var(--gris-claro);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--gris);
+    }
+
+    .input-cliente {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1.5px solid var(--gris-medio);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .input-cliente:focus { border-color: var(--azul); }
+
+    .item-pedido {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--gris-medio);
+    }
+
+    .controles-cant {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-cant {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1.5px solid var(--gris-medio);
+      background: white;
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-cant.menos { color: var(--rojo); }
+    .btn-cant.mas { color: var(--azul); border-color: var(--azul); }
+
+    .total-pedido {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 2px solid var(--gris-medio);
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--azul-oscuro);
+    }
+
+    .btn-confirmar {
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--vino), var(--vino-claro));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-confirmar:active { transform: scale(0.98); }
+
+    /* Pedidos */
+    .pedido-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--sombra);
+      border-left: 5px solid var(--azul);
+      transition: all 0.25s ease;
+    }
+    .pedido-card.en-espera { border-left-color: #f59e0b; }
+    .pedido-card.en-preparacion { border-left-color: var(--azul-claro); }
+    .pedido-card.listo { border-left-color: var(--verde); }
+    .pedido-card.entregado { border-left-color: var(--gris); opacity: 0.78; }
+    .pedido-card.cancelado { border-left-color: var(--rojo); opacity: 0.7; }
+
+    .pedido-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .pedido-num {
+      font-weight: 700;
+      color: var(--azul-oscuro);
+      font-size: 1.05rem;
+    }
+    .pedido-hora {
+      font-size: 0.75rem;
+      color: var(--gris);
+    }
+
+    .estado-badge {
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .estado-en-espera { background: #fef3c7; color: #b45309; }
+    .estado-en-preparacion { background: #dbeafe; color: #1d4ed8; }
+    .estado-listo { background: #dcfce7; color: #15803d; }
+    .estado-entregado { background: #f1f5f9; color: #475569; }
+    .estado-cancelado { background: #fee2e2; color: #b91c1c; }
+
+    .pedido-items {
+      font-size: 0.88rem;
+      color: var(--gris-oscuro);
+      margin: 8px 0 10px;
+      line-height: 1.45;
+    }
+    .pedido-total {
+      font-weight: 700;
+      color: var(--azul);
+      margin-bottom: 12px;
+    }
+
+    .acciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .btn-estado {
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-prep { background: #dbeafe; color: #1d4ed8; }
+    .btn-listo { background: #dcfce7; color: #15803d; }
+    .btn-entregado { background: #f1f5f9; color: #475569; }
+    .btn-cancelar { background: #fee2e2; color: #b91c1c; }
+
+    /* Arqueo */
+    .resumen-box {
+      background: linear-gradient(135deg, var(--azul-oscuro), var(--azul));
+      color: white;
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .resumen-box .label { font-size: 0.85rem; opacity: 0.85; }
+    .resumen-box .monto {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 4px 0;
+    }
+
+    .desglose-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--gris-medio);
+      font-size: 0.9rem;
+    }
+    .desglose-item:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--azul-oscuro);
+      padding-top: 14px;
+    }
+
+    .btn-reporte {
+      width: 100%;
+      margin-top: 16px;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--vino), var(--vino-claro));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secundario {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      background: white;
+      color: var(--gris-oscuro);
+      border: 1.5px solid var(--gris-medio);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--azul-oscuro);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 300;
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .vacio {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--gris);
+    }
+    .vacio p { margin-top: 8px; }
+
+    /* Solo admin */
+    .solo-admin { display: none; }
+    body.rol-admin .solo-admin { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="pantalla-login">
+    <div class="login-logo">KIBBUTZ</div>
+    <div class="login-sub">Sistema de pedidos</div>
+
+    <div class="login-btns">
+      <button class="btn-login usuario" onclick="entrarComo('usuario')">
+        👤 Entrar como Cliente
+      </button>
+      <button class="btn-login admin" onclick="mostrarPin()">
+        🔐 Entrar como Administrador
+      </button>
+    </div>
+
+    <div id="caja-pin">
+      <input type="password" id="pin-input" placeholder="••••" maxlength="6" inputmode="numeric" />
+      <button class="btn-entrar-pin" onclick="verificarPin()">Entrar</button>
+      <div class="pin-error" id="pin-error">PIN incorrecto</div>
+    </div>
+  </div>
+
+  <!-- APP PRINCIPAL -->
+  <div id="app" style="display:none;">
+    <header>
+      <div class="header-top">
+        <div>
+          <div class="logo">KIBBUTZ</div>
+          <div class="fecha" id="fecha-hoy"></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="rol-badge" id="rol-texto">Cliente</div>
+          <button class="btn-salir" onclick="cerrarSesion()" style="margin-top:6px;">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MENÚ -->
+    <section id="sec-menu" class="seccion active">
+      <h2>Menú</h2>
+      <div class="categorias" id="categorias"></div>
+      <div class="card" id="lista-productos"></div>
+    </section>
+
+    <!-- PEDIDOS -->
+    <section id="sec-pedidos" class="seccion">
+      <h2>Pedidos</h2>
+      <div id="lista-pedidos"></div>
+    </section>
+
+    <!-- ARQUEO (solo admin) -->
+    <section id="sec-arqueo" class="seccion">
+      <h2>Arqueo de caja</h2>
+      <div class="resumen-box">
+        <div class="label">Total vendido hoy</div>
+        <div class="monto" id="total-vendido">$0.00</div>
+        <div class="label" id="cant-pedidos">0 pedidos finalizados</div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:1rem; margin-bottom:10px; color:var(--azul-oscuro); font-weight:600;">Desglose por producto</h3>
+        <div class="desglose" id="desglose-productos"></div>
+      </div>
+
+      <button class="btn-reporte" onclick="generarReporte()">Generar reporte para WhatsApp</button>
+      <button class="btn-secundario" onclick="copiarReporte()" id="btn-copiar" style="display:none;">Copiar reporte</button>
+      <button class="btn-secundario" onclick="limpiarDia()" style="margin-top:10px; color:var(--rojo); border-color:#fecaca;">
+        Limpiar pedidos del día
+      </button>
+
+      <div id="texto-reporte" style="display:none; margin-top:16px;" class="card">
+        <pre id="contenido-reporte" style="white-space:pre-wrap; font-size:0.85rem; line-height:1.5;"></pre>
+      </div>
+    </section>
+
+    <!-- Flotante -->
+    <div id="pedido-flotante">
+      <div>
+        <div style="font-size:0.85rem; opacity:0.9;" id="flotante-info">0 productos</div>
+        <div class="total" id="flotante-total">$0.00</div>
+      </div>
+      <button class="btn-ver-pedido" onclick="abrirModalPedido()">Ver pedido</button>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="modal-pedido">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Pedido actual</h3>
+          <button class="btn-cerrar" onclick="cerrarModal()">×</button>
+        </div>
+        <input type="text" class="input-cliente" id="nombre-cliente" placeholder="Nombre del cliente (opcional)" />
+        <div id="items-modal"></div>
+        <div class="total-pedido">
+          <span>Total</span>
+          <span id="total-modal">$0.00</span>
+        </div>
+        <button class="btn-confirmar" onclick="confirmarPedido()">Confirmar pedido</button>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav>
+      <button class="nav-btn active" onclick="mostrarSeccion('menu')" data-sec="menu">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Menú
+      </button>
+      <button class="nav-btn" onclick="mostrarSeccion('pedidos')" data-sec="pedidos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Pedidos
+      </button>
+      <button class="nav-btn solo-admin" onclick="mostrarSeccion('arqueo')" data-sec="arqueo" id="nav-arqueo">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Arqueo
+      </button>
+    </nav>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ========== CONFIG ==========
+    const PIN_ADMIN = "1234"; // Cambia este PIN si quieres
+
+    const MENU = {
+      "Pupusas": [
+        { id: "p1", nombre: "Pupusa de Frijol", precio: 0.75 },
+        { id: "p2", nombre: "Pupusa de Queso", precio: 0.75 },
+        { id: "p3", nombre: "Pupusa Revuelta", precio: 0.85 },
+        { id: "p4", nombre: "Pupusa de Chicharrón", precio: 0.85 },
+        { id: "p5", nombre: "Pupusa de Ayote", precio: 0.80 },
+        { id: "p6", nombre: "Pupusa de Loroco", precio: 0.90 }
+      ],
+      "Bebidas": [
+        { id: "b1", nombre: "Fresco Natural", precio: 1.00 },
+        { id: "b2", nombre: "Café", precio: 1.25 },
+        { id: "b3", nombre: "Té", precio: 1.00 },
+        { id: "b4", nombre: "Chocolate en polvo", precio: 1.50 },
+        { id: "b5", nombre: "Agua embotellada", precio: 0.75 },
+        { id: "b6", nombre: "Refresco", precio: 1.00 }
+      ],
+      "Golosinas": [
+        { id: "g1", nombre: "Churro", precio: 1.00 },
+        { id: "g2", nombre: "Churro relleno", precio: 1.50 },
+        { id: "g3", nombre: "Galleta", precio: 0.50 },
+        { id: "g4", nombre: "Dulce de leche", precio: 0.75 }
+      ],
+      "Desayunos": [
+        { id: "d1", nombre: "Desayuno típico", precio: 3.50 },
+        { id: "d2", nombre: "Huevos con frijoles", precio: 2.50 },
+        { id: "d3", nombre: "Pan con pollo", precio: 2.00 }
+      ]
+    };
+
+    let rolActual = null; // "usuario" | "admin"
+    let categoriaActual = "Pupusas";
+    let pedidoActual = [];
+    let pedidos = JSON.parse(localStorage.getItem("kibbutz_pedidos") || "[]");
+    let contadorPedidos = parseInt(localStorage.getItem("kibbutz_contador") || "0");
+
+    // ========== LOGIN ==========
+    function mostrarPin() {
+      document.getElementById("caja-pin").classList.add("visible");
+      document.getElementById("pin-input").focus();
+    }
+
+    function verificarPin() {
+      const pin = document.getElementById("pin-input").value;
+      if (pin === PIN_ADMIN) {
+        entrarComo("admin");
+      } else {
+        document.getElementById("pin-error").style.display = "block";
+        document.getElementById("pin-input").value = "";
+        setTimeout(() => {
+          document.getElementById("pin-error").style.display = "none";
+        }, 2000);
+      }
+    }
+
+    document.getElementById("pin-input").addEventListener("keyup", function(e) {
+      if (e.key === "Enter") verificarPin();
+    });
+
+    function entrarComo(rol) {
+      rolActual = rol;
+      document.getElementById("pantalla-login").classList.add("oculto");
+      setTimeout(() => {
+        document.getElementById("pantalla-login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+      }, 350);
+
+      // Configurar UI según rol
+      if (rol === "admin") {
+        document.body.classList.add("rol-admin");
+        document.getElementById("rol-texto").textContent = "Administrador";
+        document.getElementById("nav-arqueo").classList.remove("oculto");
+      } else {
+        document.body.classList.remove("rol-admin");
+        document.getElementById("rol-texto").textContent = "Cliente";
+        document.getElementById("nav-arqueo").classList.add("oculto");
+      }
+
+      // Iniciar app
+      document.getElementById("fecha-hoy").textContent = new Date().toLocaleDateString("es-SV", {
+        weekday: "long", day: "numeric", month: "long"
+      });
+      renderCategorias();
+      renderProductos();
+      renderPedidos();
+      actualizarFlotante();
+    }
+
+    function cerrarSesion() {
+      if (pedidoActual.length > 0 && !confirm("Tienes un pedido en curso. ¿Salir de todos modos?")) return;
+      rolActual = null;
+      pedidoActual = [];
+      document.getElementById("app").style.display = "none";
+      document.getElementById("pantalla-login").style.display = "flex";
+      document.getElementById("pantalla-login").classList.remove("oculto");
+      document.getElementById("caja-pin").classList.remove("visible");
+      document.getElementById("pin-input").value = "";
+      document.body.classList.remove("rol-admin");
+      mostrarSeccion("menu");
+    }
+
+    // ========== NAVEGACIÓN ==========
+    function mostrarSeccion(nombre) {
+      if (nombre === "arqueo" && rolActual !== "admin") return;
+
+      document.querySelectorAll(".seccion").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+
+      document.getElementById("sec-" + nombre).classList.add("active");
+      const btn = document.querySelector(`[data-sec="${nombre}"]`);
+      if (btn) btn.classList.add("active");
+
+      if (nombre === "pedidos") renderPedidos();
+      if (nombre === "arqueo") calcularArqueo();
+    }
+
+    // ========== MENÚ ==========
+    function renderCategorias() {
+      const cont = document.getElementById("categorias");
+      cont.innerHTML = Object.keys(MENU).map(cat =>
+        `<button class="cat-btn ${cat === categoriaActual ? "active" : ""}" onclick="cambiarCategoria('${cat}')">${cat}</button>`
+      ).join("");
+    }
+
+    function cambiarCategoria(cat) {
+      categoriaActual = cat;
+      renderCategorias();
+      renderProductos();
+    }
+
+    function renderProductos() {
+      const cont = document.getElementById("lista-productos");
+      const productos = MENU[categoriaActual] || [];
+      cont.innerHTML = productos.map(p => `
+        <div class="producto">
+          <div class="prod-info">
+            <h4>${p.nombre}</h4>
+            <p>Precio unitario</p>
+          </div>
+          <div style="display:flex; align-items:center;">
+            <span class="prod-precio">$${p.precio.toFixed(2)}</span>
+            <button class="btn-add" onclick="agregarProducto('${p.id}', '${p.nombre}', ${p.precio})">+</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ========== PEDIDO ACTUAL ==========
+    function agregarProducto(id, nombre, precio) {
+      const existe = pedidoActual.find(i => i.id === id);
+      if (existe) existe.cantidad++;
+      else pedidoActual.push({ id, nombre, precio, cantidad: 1 });
+      actualizarFlotante();
+      mostrarToast(`+ ${nombre}`);
+    }
+
+    function actualizarFlotante() {
+      const flotante = document.getElementById("pedido-flotante");
+      const totalItems = pedidoActual.reduce((s, i) => s + i.cantidad, 0);
+      const total = pedidoActual.reduce((s, i) => s + i.precio * i.cantidad, 0);
+
+      if (totalItems > 0) {
+        flotante.style.display = "flex";
+        document.getElementById("flotante-info").textContent = `${totalItems} producto${totalItems > 1 ? "s" : ""}`;
+        document.getElementById("flotante-total").textContent = `$${total.toFixed(2)}`;
+      } else {
+        flotante.style.display = "none";
+      }
+    }
+
+    function abrirModalPedido() {
+      renderModalItems();
+      document.getElementById("modal-pedido").classList.add("open");
+    }
+
+    function cerrarModal() {
+      document.getElementById("modal-pedido").classList.remove("open");
+    }
+
+    function renderModalItems() {
+      const cont = document.getElementById("items-modal");
+      if (pedidoActual.length === 0) {
+        cont.innerHTML = `<div class="vacio"><p>No hay productos aún</p></div>`;
+        document.getElementById("total-modal").textContent = "$0.00";
+        return;
+      }
+
+      cont.innerHTML = pedidoActual.map((item, idx) => `
+        <div class="item-pedido">
+          <div>
+            <div style="font-weight:500">${item.nombre}</div>
+            <div style="font-size:0.8rem; color:var(--gris)">$${item.precio.toFixed(2)} c/u</div>
+          </div>
+          <div class="controles-cant">
+            <button class="btn-cant menos" onclick="cambiarCantidad(${idx}, -1)">−</button>
+            <span style="font-weight:600; min-width:22px; text-align:center;">${item.cantidad}</span>
+            <button class="btn-cant mas" onclick="cambiarCantidad(${idx}, 1)">+</button>
+          </div>
+        </div>
+      `).join("");
+
+      const total = pedidoActual.reduce((s, i) => s + i.precio * i.cantidad, 0);
+      document.getElementById("total-modal").textContent = `$${total.toFixed(2)}`;
+    }
+
+    function cambiarCantidad(idx, delta) {
+      pedidoActual[idx].cantidad += delta;
+      if (pedidoActual[idx].cantidad <= 0) pedidoActual.splice(idx, 1);
+      renderModalItems();
+      actualizarFlotante();
+    }
+
+    function confirmarPedido() {
+      if (pedidoActual.length === 0) {
+        mostrarToast("Agrega productos primero");
+        return;
+      }
+
+      contadorPedidos++;
+      const nombre = document.getElementById("nombre-cliente").value.trim() || "Cliente";
+      const total = pedidoActual.reduce((s, i) => s + i.precio * i.cantidad, 0);
+
+      const nuevo = {
+        id: contadorPedidos,
+        cliente: nombre,
+        items: JSON.parse(JSON.stringify(pedidoActual)),
+        total: total,
+        estado: "en-espera",
+        hora: new Date().toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" }),
+        fecha: new Date().toISOString().slice(0, 10),
+        creadoPor: rolActual
+      };
+
+      pedidos.unshift(nuevo);
+      guardar();
+      pedidoActual = [];
+      document.getElementById("nombre-cliente").value = "";
+      actualizarFlotante();
+      cerrarModal();
+      mostrarToast(`Pedido #${nuevo.id} registrado`);
+      mostrarSeccion("pedidos");
+    }
+
+    // ========== PEDIDOS ==========
+    function renderPedidos() {
+      const cont = document.getElementById("lista-pedidos");
+      const activos = pedidos.filter(p => p.fecha === hoy());
+
+      if (activos.length === 0) {
+        cont.innerHTML = `<div class="vacio"><p>No hay pedidos todavía</p></div>`;
+        return;
+      }
+
+      cont.innerHTML = activos.map(p => {
+        const itemsTxt = p.items.map(i => `${i.cantidad}× ${i.nombre}`).join(", ");
+        const puedeCambiar = rolActual === "admin";
+
+        return `
+          <div class="pedido-card ${p.estado}">
+            <div class="pedido-header">
+              <div>
+                <div class="pedido-num">#${p.id} · ${p.cliente}</div>
+                <div class="pedido-hora">${p.hora}</div>
+              </div>
+              <span class="estado-badge estado-${p.estado}">${textoEstado(p.estado)}</span>
+            </div>
+            <div class="pedido-items">${itemsTxt}</div>
+            <div class="pedido-total">$${p.total.toFixed(2)}</div>
+            ${puedeCambiar ? `
+              <div class="acciones">
+                ${p.estado === "en-espera" ? `<button class="btn-estado btn-prep" onclick="cambiarEstado(${p.id}, 'en-preparacion')">En preparación</button>` : ""}
+                ${(p.estado === "en-preparacion" || p.estado === "en-espera") ? `<button class="btn-estado btn-listo" onclick="cambiarEstado(${p.id}, 'listo')">Listo</button>` : ""}
+                ${p.estado === "listo" ? `<button class="btn-estado btn-entregado" onclick="cambiarEstado(${p.id}, 'entregado')">Entregado</button>` : ""}
+                ${p.estado !== "cancelado" && p.estado !== "entregado" ? `<button class="btn-estado btn-cancelar" onclick="cambiarEstado(${p.id}, 'cancelado')">Cancelar</button>` : ""}
+              </div>
+            ` : ""}
+          </div>`;
+      }).join("");
+    }
+
+    function textoEstado(est) {
+      const map = {
+        "en-espera": "En espera",
+        "en-preparacion": "En preparación",
+        "listo": "Listo",
+        "entregado": "Entregado",
+        "cancelado": "Cancelado"
+      };
+      return map[est] || est;
+    }
+
+    function cambiarEstado(id, nuevoEstado) {
+      if (rolActual !== "admin") return;
+      const p = pedidos.find(x => x.id === id);
+      if (p) {
+        p.estado = nuevoEstado;
+        guardar();
+        renderPedidos();
+        calcularArqueo();
+        mostrarToast(`Pedido #${id} → ${textoEstado(nuevoEstado)}`);
+      }
+    }
+
+    // ========== ARQUEO ==========
+    function calcularArqueo() {
+      if (rolActual !== "admin") return;
+
+      const hoyStr = hoy();
+      const finalizados = pedidos.filter(p =>
+        p.fecha === hoyStr && (p.estado === "entregado" || p.estado === "listo")
+      );
+
+      const total = finalizados.reduce((s, p) => s + p.total, 0);
+      document.getElementById("total-vendido").textContent = `$${total.toFixed(2)}`;
+      document.getElementById("cant-pedidos").textContent = `${finalizados.length} pedido${finalizados.length !== 1 ? "s" : ""} finalizados`;
+
+      const conteo = {};
+      finalizados.forEach(p => {
+        p.items.forEach(i => {
+          if (!conteo[i.nombre]) conteo[i.nombre] = { cant: 0, total: 0 };
+          conteo[i.nombre].cant += i.cantidad;
+          conteo[i.nombre].total += i.cantidad * i.precio;
+        });
+      });
+
+      const cont = document.getElementById("desglose-productos");
+      const entries = Object.entries(conteo).sort((a, b) => b[1].total - a[1].total);
+
+      if (entries.length === 0) {
+        cont.innerHTML = `<div style="color:var(--gris); padding:10px 0;">Aún no hay ventas finalizadas</div>`;
+      } else {
+        cont.innerHTML = entries.map(([nombre, data]) => `
+          <div class="desglose-item">
+            <span>${data.cant}× ${nombre}</span>
+            <span>$${data.total.toFixed(2)}</span>
+          </div>
+        `).join("") + `
+          <div class="desglose-item">
+            <span>TOTAL</span>
+            <span>$${total.toFixed(2)}</span>
+          </div>`;
+      }
+    }
+
+    function generarReporte() {
+      const hoyStr = hoy();
+      const finalizados = pedidos.filter(p =>
+        p.fecha === hoyStr && (p.estado === "entregado" || p.estado === "listo")
+      );
+      const cancelados = pedidos.filter(p => p.fecha === hoyStr && p.estado === "cancelado");
+      const total = finalizados.reduce((s, p) => s + p.total, 0);
+
+      const conteo = {};
+      finalizados.forEach(p => {
+        p.items.forEach(i => {
+          if (!conteo[i.nombre]) conteo[i.nombre] = { cant: 0, total: 0 };
+          conteo[i.nombre].cant += i.cantidad;
+          conteo[i.nombre].total += i.cantidad * i.precio;
+        });
+      });
+
+      let texto = `*KIBBUTZ · Arqueo de caja*\n`;
+      texto += `📅 ${new Date().toLocaleDateString("es-SV", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}\n`;
+      texto += `━━━━━━━━━━━━━━━━\n\n`;
+
+      if (Object.keys(conteo).length === 0) {
+        texto += `No hubo ventas finalizadas hoy.\n`;
+      } else {
+        texto += `*Desglose de ventas:*\n`;
+        Object.entries(conteo)
+          .sort((a, b) => b[1].total - a[1].total)
+          .forEach(([nombre, data]) => {
+            texto += `• ${data.cant}× ${nombre} → $${data.total.toFixed(2)}\n`;
+          });
+        texto += `\n`;
+      }
+
+      texto += `✅ Pedidos finalizados: ${finalizados.length}\n`;
+      texto += `❌ Pedidos cancelados: ${cancelados.length}\n`;
+      texto += `\n💰 *TOTAL VENDIDO: $${total.toFixed(2)}*\n`;
+      texto += `\n_Generado desde KIBBUTZ_`;
+
+      document.getElementById("contenido-reporte").textContent = texto;
+      document.getElementById("texto-reporte").style.display = "block";
+      document.getElementById("btn-copiar").style.display = "block";
+
+      navigator.clipboard.writeText(texto).then(() => {
+        mostrarToast("Reporte copiado ✓");
+      }).catch(() => {
+        mostrarToast("Reporte generado");
+      });
+    }
+
+    function copiarReporte() {
+      const texto = document.getElementById("contenido-reporte").textContent;
+      navigator.clipboard.writeText(texto).then(() => mostrarToast("Copiado ✓"));
+    }
+
+    function limpiarDia() {
+      if (!confirm("¿Seguro que quieres borrar todos los pedidos de hoy?")) return;
+      const hoyStr = hoy();
+      pedidos = pedidos.filter(p => p.fecha !== hoyStr);
+      guardar();
+      renderPedidos();
+      calcularArqueo();
+      document.getElementById("texto-reporte").style.display = "none";
+      document.getElementById("btn-copiar").style.display = "none";
+      mostrarToast("Pedidos del día eliminados");
+    }
+
+    // ========== UTILS ==========
+    function hoy() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function guardar() {
+      localStorage.setItem("kibbutz_pedidos", JSON.stringify(pedidos));
+      localStorage.setItem("kibbutz_contador", contadorPedidos.toString());
+    }
+
+    function mostrarToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    document.getElementById("modal-pedido").addEventListener("click", function(e) {
+      if (e.target === this) cerrarModal();
+    });
+  </script>
+</body>
+</html>
